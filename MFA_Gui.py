@@ -10,13 +10,14 @@ from mfa_app import reg_user, login, init_db
 class MFAApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Brenden's MFA Application")  # Set the window title
+        self.title("MFA Application")  # Set the window title
         self.geometry("1200x800")  # Set window size to 1200x800
         self.current_screen = None
         self.qr_image_label = None  # To hold the QR code image label
         init_db()  # Initialize the database
         self.show_main_menu()
-
+    
+    #Show main Menu screen
     def show_main_menu(self):
         if self.current_screen:
             self.current_screen.destroy()
@@ -24,7 +25,7 @@ class MFAApp(tk.Tk):
         self.current_screen = tk.Frame(self)
         self.current_screen.pack(fill="both", expand=True)
 
-        # Add a title label at the top
+
         title_label = tk.Label(self.current_screen, text="Brenden's MFA Application!", font=("Arial", 24))
         title_label.pack(pady=20)
 
@@ -36,6 +37,7 @@ class MFAApp(tk.Tk):
         login_button.pack(pady=20)
         exit_button.pack(pady=20)
 
+    #Register User screen
     def show_register_screen(self):
         if self.current_screen:
             self.current_screen.destroy()
@@ -43,6 +45,7 @@ class MFAApp(tk.Tk):
         self.current_screen = tk.Frame(self)
         self.current_screen.pack(fill="both", expand=True)
 
+        #Entry and labels for username, password, and password confirmation
         username_label = tk.Label(self.current_screen, text="Username", font=("Arial", 16))
         password_label = tk.Label(self.current_screen, text="Password", font=("Arial", 16))
         confirm_password_label = tk.Label(self.current_screen, text="Confirm Password", font=("Arial", 16))
@@ -61,11 +64,13 @@ class MFAApp(tk.Tk):
         self.confirm_password_entry.pack(pady=10)
         submit_button.pack(pady=20)
 
+    #Register User 
     def register_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
         confirm_password = self.confirm_password_entry.get()
 
+        #Check for password matching
         if password != confirm_password:
             messagebox.showerror("Error", "Passwords do not match")
             return
@@ -80,6 +85,7 @@ class MFAApp(tk.Tk):
         else:
             messagebox.showerror("Error", message)
 
+    #Shows the QR code on screen
     def show_qr_code(self, username, secret_key):
         if self.current_screen:
             self.current_screen.destroy()
@@ -98,13 +104,14 @@ class MFAApp(tk.Tk):
             self.qr_image_label.destroy()  # Remove the previous QR code image
 
         self.qr_image_label = tk.Label(self.current_screen, image=qr_image)
-        self.qr_image_label.image = qr_image  # Keep a reference to avoid garbage collection
+        self.qr_image_label.image = qr_image  
         self.qr_image_label.pack(pady=20)
 
-        # Add "Scan and Return to Main Menu" button
+        # Return to main menu
         scan_button = tk.Button(self.current_screen, text="Scan and Return to Main Menu", command=self.show_main_menu, font=("Arial", 16))
         scan_button.pack(pady=20)
 
+    #Login Screen
     def show_login_screen(self):
         if self.current_screen:
             self.current_screen.destroy()
@@ -112,12 +119,14 @@ class MFAApp(tk.Tk):
         self.current_screen = tk.Frame(self)
         self.current_screen.pack(fill="both", expand=True)
 
+        #Username and Password Entries
         username_label = tk.Label(self.current_screen, text="Username", font=("Arial", 16))
         password_label = tk.Label(self.current_screen, text="Password", font=("Arial", 16))
 
         self.username_entry = tk.Entry(self.current_screen, font=("Arial", 16))
         self.password_entry = tk.Entry(self.current_screen, show="*", font=("Arial", 16))
 
+        #Verify button to prompt OTP verification
         verify_button = tk.Button(self.current_screen, text="Verify", command=self.verify_login, font=("Arial", 16))
 
         username_label.pack(pady=10)
@@ -126,11 +135,11 @@ class MFAApp(tk.Tk):
         self.password_entry.pack(pady=10)
         verify_button.pack(pady=20)
 
+    #Login with OTP Verification
     def verify_login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        # Assuming user knows the OTP already for this demo, so prompting directly
         otp = simpledialog.askstring("Enter OTP", "Please enter your OTP from Google Authenticator:")
 
         success, message = login(username, password, otp)
@@ -141,6 +150,7 @@ class MFAApp(tk.Tk):
         else:
             messagebox.showerror("Login Failed", message)
 
+    #Shows Gif Image upon successful login
     def show_gif_screen(self):
         if self.current_screen:
             self.current_screen.destroy()
@@ -149,14 +159,14 @@ class MFAApp(tk.Tk):
         self.current_screen.pack(fill="both", expand=True)
 
         # Load and display animated GIF
-        gif_path = r"Assets\Dance.gif"  # Path to your GIF
+        gif_path = r"Assets\Dance.gif"  
         gif_image = ImageTk.PhotoImage(Image.open(gif_path))
         
         gif_label = tk.Label(self.current_screen, image=gif_image)
-        gif_label.image = gif_image  # Keep a reference to avoid garbage collection
+        gif_label.image = gif_image  
         gif_label.pack(pady=20)
 
-        # Add a button to return to the main menu
+        # Button to return to the main menu
         return_button = tk.Button(self.current_screen, text="Return to Main Menu", command=self.show_main_menu, font=("Arial", 16))
         return_button.pack(pady=20)
 

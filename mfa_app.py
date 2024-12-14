@@ -66,32 +66,6 @@ def reg_user(username, password):
         conn.close()
         return False, "Username already taken!", None, None
 
-#Show QR in GUI
-def show_qr_code(self, username, secret_key):
-    if self.current_screen:
-        self.current_screen.destroy()
-
-    self.current_screen = tk.Frame(self)
-    self.current_screen.pack(fill="both", expand=True)
-
-    totp = pyotp.TOTP(secret_key)
-    uri = totp.provisioning_uri(name=username, issuer_name="MFA App")
-    
-    # Create and display QR code
-    qr = qrcode.make(uri)
-    qr_image = ImageTk.PhotoImage(qr)
-
-    if self.qr_image_label:
-        self.qr_image_label.destroy()  # Remove the previous QR code image
-
-    self.qr_image_label = tk.Label(self.current_screen, image=qr_image)
-    self.qr_image_label.image = qr_image  # Keep a reference to avoid garbage collection
-    self.qr_image_label.pack(pady=10)
-
-    # Add "Scan and Return to Main Menu" button
-    scan_button = tk.Button(self.current_screen, text="Scan and Return to Main Menu", command=self.show_main_menu)
-    scan_button.pack(pady=10)
-
 #Login Function
 def login(username, password, otp):
     conn = sqlite3.connect(USERS_DB)
