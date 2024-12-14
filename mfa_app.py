@@ -7,6 +7,10 @@ import sqlite3
 import bcrypt
 import qrcode
 import pyotp
+import os
+import tkinter as tk
+from io import BytesIO
+from PIL import ImageTk, Image
 
 #Constants
 USERS_DB = 'users.db'
@@ -30,37 +34,66 @@ def init_db():
         
 init_db()
 
-#Registering users
+# Registering users
 def reg_user(username, password):
     conn = sqlite3.connect(USERS_DB)
     cursor = conn.cursor()
     
-    #Hash password using bcrypt
+    # Hash password using bcrypt
     password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     
-    #TOTP Secret Key
+    # TOTP Secret Key
     secret_key = pyotp.random_base32()
     
     try:
-        #Insert user
+        # Insert user into the database
         cursor.execute('INSERT INTO users (username, password_hash, secret_key) VALUES (?, ?, ?)', (username, password_hash, secret_key))
         conn.commit()
-        
-        #Show QR Code for Google Authenticator
+
+        # Generate QR Code for Google Authenticator
         totp = pyotp.TOTP(secret_key)
         uri = totp.provisioning_uri(name=username, issuer_name="MFA App")
+        
+        # Save the QR Code image to a file
         qr = qrcode.make(uri)
-        qr.show()
-        
-        print(f"User {username} registered successfully!")
-        print(f"For verification, scan this QR code with Google Authenticator or use this key: {secret_key}")
+        qr_path = "qr_code.png"  # Save QR code as a PNG image
+        qr.save(qr_path)
+
+        conn.close()
+        return True, f"User {username} registered successfully! Please scan the QR Code for Google Authenticator", secret_key, qr_path
+
     except sqlite3.IntegrityError:
-        print("Username already taken!")
-        
-    conn.close()
+        conn.close()
+        return False, "Username already taken!", None, None
+
+#Show QR in GUI
+def show_qr_code(self, username, secret_key):
+    if self.current_screen:
+        self.current_screen.destroy()
+
+    self.current_screen = tk.Frame(self)
+    self.current_screen.pack(fill="both", expand=True)
+
+    totp = pyotp.TOTP(secret_key)
+    uri = totp.provisioning_uri(name=username, issuer_name="MFA App")
     
+    # Create and display QR code
+    qr = qrcode.make(uri)
+    qr_image = ImageTk.PhotoImage(qr)
+
+    if self.qr_image_label:
+        self.qr_image_label.destroy()  # Remove the previous QR code image
+
+    self.qr_image_label = tk.Label(self.current_screen, image=qr_image)
+    self.qr_image_label.image = qr_image  # Keep a reference to avoid garbage collection
+    self.qr_image_label.pack(pady=10)
+
+    # Add "Scan and Return to Main Menu" button
+    scan_button = tk.Button(self.current_screen, text="Scan and Return to Main Menu", command=self.show_main_menu)
+    scan_button.pack(pady=10)
+
 #Login Function
-def login(username, password):
+def login(username, password, otp):
     conn = sqlite3.connect(USERS_DB)
     cursor = conn.cursor()
     
@@ -69,50 +102,22 @@ def login(username, password):
     user = cursor.fetchone()
     
     if user is None:
-        print("Username not found!")
-        return False
+        conn.close()
+        return False, "Username not found!"
     
     stored_password_hash, secret_key = user
     
     #Verify Password
     if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash):
        totp = pyotp.TOTP(secret_key)
-       otp = input("Enter the code from Google Authenticator: ")
        
        if totp.verify(otp):
-            print(f"Login successful for {username}!")
-            return True
-       else: 
-            print("Incorrect one time password!")
-            return False
+            conn.close()
+            return True, f"Login successful for {username}!"
+       else:
+            conn.close() 
+            return False, "Incorrect one time password!"
     else:
-        print("Incorrect password!")
-        return False
+        conn.close()
+        return False, "Incorrect password!"
     
-def main():
-    while True:
-        print("1: Register New User")
-        print("2: Login")
-        print("3: Exit")
-        choice = input("Select an Option:")
-        
-        if choice == '1':
-            username = input("Enter username: ")
-            password = input("Enter password: ")
-            check_password = input("Re-enter Password: ")
-            if password == check_password: 
-                reg_user(username, password)
-            else:
-                print("Passwords do not match!")
-        elif choice == '2':
-            username = input("Username: ")
-            password = input("Password: ")
-            login(username, password)
-        elif choice == '3':
-            print("Exiting...")
-            break
-        else:
-            print("Invalid option! Please try again!")
-    
-if __name__ == "__main__":
-    main()
